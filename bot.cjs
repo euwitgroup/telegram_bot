@@ -8,11 +8,6 @@ let db;
 try {
     let serviceAccount;
 
-    // DEBUG: Print available Env Vars (Keys only)
-    console.log('🔍 Checking Environment Variables...');
-    const envKeys = Object.keys(process.env).filter(k => k.startsWith('FIREBASE'));
-    console.log('Found FIREBASE Keys:', envKeys);
-
     // Method 1: Base64 Encoded (Best for Render/Replit)
     if (process.env.FIREBASE_AUTH_BASE64) {
         try {
