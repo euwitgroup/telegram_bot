@@ -9,6 +9,10 @@ try {
     let serviceAccount;
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
         serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        // FIX: Handle newline escapes in private key (common Render/Replit issue)
+        if (serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
     } else {
         serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
     }
