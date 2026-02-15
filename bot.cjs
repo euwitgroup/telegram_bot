@@ -7,28 +7,36 @@ const fs = require('fs');
 let db;
 try {
     let serviceAccount;
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+
+    // DEBUG: Print available Env Vars (Keys only)
+    console.log('🔍 Checking Environment Variables...');
+    const envKeys = Object.keys(process.env).filter(k => k.startsWith('FIREBASE'));
+    console.log('Found FIREBASE Keys:', envKeys);
+
+    // Method 1: Base64 Encoded (Best for Render/Replit)
+    if (process.env.FIREBASE_AUTH_BASE64) {
+        try {
+            const decoded = Buffer.from(process.env.FIREBASE_AUTH_BASE64, 'base64').toString('utf8');
+            serviceAccount = JSON.parse(decoded);
+            console.log('✅ Loaded Firebase config from BASE64 Variable');
+        } catch (e) {
+            console.error('❌ Failed to parse FIREBASE_AUTH_BASE64:', e);
+        }
+    }
+    // Method 2: JSON String (Old method, prone to formatting errors)
+    else if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
         try {
             serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-            console.log('✅ Loaded Firebase config from JSON Environment Variable');
-
-            // FIX: Handle various newline escape issues common in cloud envs
+            console.log('⚠️ Loaded Firebase config from JSON Variable (Check private_key if auth fails)');
             if (serviceAccount.private_key) {
-                const oldKeyLen = serviceAccount.private_key.length;
-                serviceAccount.private_key = serviceAccount.private_key
-                    .replace(/\\n/g, '\n')  // Replace literal \n with actual newline
-                    .replace(/"/g, '')      // Remove any extra quotes if accidentally included
-
-                // Ensure correct header/footer if they got messed up
-                if (!serviceAccount.private_key.includes('-----BEGIN PRIVATE KEY-----')) {
-                    console.error('❌ CRITICAL: Private Key missing header!');
-                }
+                serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
             }
-            console.log(`ℹ️ Service Account ID: ${serviceAccount.client_email}`);
         } catch (e) {
             console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', e);
         }
-    } else {
+    }
+    // Method 3: Local File
+    else {
         console.log('ℹ️ Loading Firebase config from local file path...');
         serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
     }
