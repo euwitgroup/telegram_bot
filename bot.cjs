@@ -8,12 +8,28 @@ let db;
 try {
     let serviceAccount;
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        // FIX: Handle newline escapes in private key (common Render/Replit issue)
-        if (serviceAccount.private_key) {
-            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        try {
+            serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+            console.log('✅ Loaded Firebase config from JSON Environment Variable');
+
+            // FIX: Handle various newline escape issues common in cloud envs
+            if (serviceAccount.private_key) {
+                const oldKeyLen = serviceAccount.private_key.length;
+                serviceAccount.private_key = serviceAccount.private_key
+                    .replace(/\\n/g, '\n')  // Replace literal \n with actual newline
+                    .replace(/"/g, '')      // Remove any extra quotes if accidentally included
+
+                // Ensure correct header/footer if they got messed up
+                if (!serviceAccount.private_key.includes('-----BEGIN PRIVATE KEY-----')) {
+                    console.error('❌ CRITICAL: Private Key missing header!');
+                }
+            }
+            console.log(`ℹ️ Service Account ID: ${serviceAccount.client_email}`);
+        } catch (e) {
+            console.error('❌ Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', e);
         }
     } else {
+        console.log('ℹ️ Loading Firebase config from local file path...');
         serviceAccount = require(process.env.FIREBASE_SERVICE_ACCOUNT_PATH);
     }
 
